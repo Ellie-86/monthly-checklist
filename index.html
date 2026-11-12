@@ -52,7 +52,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:16px;ma
 <nav class="tabs"><button class="tab active" data-view="current">이번 달</button><button class="tab" data-view="history">월별 기록</button><button class="tab" data-view="manage">반복항목 관리</button></nav>
 <div class="view active" id="view-current">
  <section class="section">
-  <div class="section-head"><div><div class="section-title"><span class="symbol">↻</span>반복항목</div><div class="hint">고정 카테고리와 목록이 매월 자동으로 생성됩니다.</div></div><button class="btn small" id="addRecurringCat">＋ 카테고리</button></div>
+  <div class="section-head"><div><div class="section-title"><span class="symbol">↻</span>반복항목</div><div class="hint">고정 카테고리와 목록이 매월 자동으로 생성됩니다. 수정은 반복항목 관리에서 할 수 있습니다.</div></div></div>
   <div id="recurringArea"></div>
  </section>
  <section class="section">
@@ -124,15 +124,18 @@ function renderNotice(){
 }
 function catHtml(c,kind,editable=true){
  const items=c.items||[];
- return `<div class="cat"><div class="cat-head"><span style="color:#83b600">▰</span><span class="cat-name">${escapeHtml(c.name)}</span><span class="cat-count">${items.filter(i=>i.done).length}/${items.length} 완료</span>${editable?`<div class="cat-actions"><button class="iconbtn" title="목록 추가" data-action="add-item" data-kind="${kind}" data-cat="${c.id}">＋</button><button class="iconbtn" title="카테고리 수정" data-action="edit-cat" data-kind="${kind}" data-cat="${c.id}">✎</button><button class="iconbtn" title="카테고리 삭제" data-action="delete-cat" data-kind="${kind}" data-cat="${c.id}">×</button></div>`:''}</div><div class="items">${items.length?`<div class="item item-head"><span>결제수단</span><span class="pay-date">결제일</span><span>내역</span><span style="text-align:right">금액</span><span></span><span></span><span></span></div>${items.map(i=>itemHtml(i,kind,c.id)).join('')}`:'<div class="empty">등록된 항목이 없습니다.</div>'}</div><div class="addline" style="padding:0 10px 8px"><button class="btn small" data-action="add-item" data-kind="${kind}" data-cat="${c.id}">＋ 항목 추가</button></div></div>`;
+ const controls=editable?`<div class="cat-actions"><button class="iconbtn" title="목록 추가" data-action="add-item" data-kind="${kind}" data-cat="${c.id}">＋</button></div>`:'';
+ const addLine='';
+ return `<div class="cat"><div class="cat-head"><span style="color:#83b600">▰</span><span class="cat-name">${escapeHtml(c.name)}</span><span class="cat-count">${items.filter(i=>i.done).length}/${items.length} 완료</span>${controls}</div><div class="items">${items.length?`<div class="item item-head"><span>결제수단</span><span class="pay-date">결제일</span><span>내역</span><span style="text-align:right">금액</span><span></span><span></span><span></span></div>${items.map(i=>itemHtml(i,kind,c.id,editable)).join('')}`:'<div class="empty">등록된 항목이 없습니다.</div>'}</div>${addLine}</div>`;
 }
-function itemHtml(i,kind,catId){
+function itemHtml(i,kind,catId,editable=true){
  const m=i.method||'미선택';const cls=m==='체크'?'debit':m==='현금'?'cash':'';
- return `<div class="item"><span class="method ${cls}">${escapeHtml(m)}</span><span class="pay-date">${i.payDate?escapeHtml(i.payDate)+'일':'—'}</span><span class="item-name ${i.done?'done':''}" title="${escapeHtml(i.note||'')}">${escapeHtml(i.name)}</span><span class="amount">${i.amount?money(i.amount):'—'}</span><input class="check" type="checkbox" ${i.done?'checked':''} aria-label="완료 체크" data-action="toggle" data-kind="${kind}" data-cat="${catId}" data-item="${i.id}"><button class="iconbtn" title="항목 수정" data-action="edit-item" data-kind="${kind}" data-cat="${catId}" data-item="${i.id}">✎</button><button class="iconbtn" title="항목 삭제" data-action="delete-item" data-kind="${kind}" data-cat="${catId}" data-item="${i.id}">×</button></div>`;
+ const actions=editable?`<button class="iconbtn" title="항목 수정" data-action="edit-item" data-kind="${kind}" data-cat="${catId}" data-item="${i.id}">✎</button><button class="iconbtn" title="항목 삭제" data-action="delete-item" data-kind="${kind}" data-cat="${catId}" data-item="${i.id}">×</button>`:`<span></span><span></span>`;
+ return `<div class="item"><span class="method ${cls}">${escapeHtml(m)}</span><span class="pay-date">${i.payDate?escapeHtml(i.payDate)+'일':'—'}</span><span class="item-name ${i.done?'done':''}" title="${escapeHtml(i.note||'')}">${escapeHtml(i.name)}</span><span class="amount">${i.amount?money(i.amount):'—'}</span><input class="check" type="checkbox" ${i.done?'checked':''} aria-label="완료 체크" data-action="toggle" data-kind="${kind}" data-cat="${catId}" data-item="${i.id}">${actions}</div>`;
 }
 function renderCurrent(){
  const md=monthData(currentMonth);
- $('#recurringArea').innerHTML=md.categories.length?md.categories.map(c=>catHtml(c,'recurring')).join(''):'<div class="empty">반복 카테고리가 없습니다. 항목 관리에서 추가해 주세요.</div>';
+ $('#recurringArea').innerHTML=md.categories.length?md.categories.map(c=>catHtml(c,'recurring',false)).join(''):'<div class="empty">반복 카테고리가 없습니다. 항목 관리에서 추가해 주세요.</div>';
  $('#monthlyArea').innerHTML=md.monthlyCategories?.length?md.monthlyCategories.map(c=>catHtml(c,'monthly')).join(''):'<div class="empty">이번 달 추가 항목이 없습니다.</div>';
  const all=[...md.categories,...(md.monthlyCategories||[])].flatMap(c=>c.items);
  const done=all.filter(i=>i.done).length,total=all.length,sum=all.reduce((a,i)=>a+Number(i.amount||0),0);
@@ -150,7 +153,7 @@ function renderHistory(){
  }).join(''):'<div class="empty">아직 보관된 월별 기록이 없습니다.</div>';
 }
 function renderManage(){
- $('#manageArea').innerHTML=state.templates.length?state.templates.map(c=>`<div class="cat"><div class="cat-head"><span style="color:#83b600">▰</span><span class="cat-name">${escapeHtml(c.name)}</span><span class="cat-count">${c.items.length}개 항목</span><div class="cat-actions"><button class="iconbtn" data-template="add" data-cat="${c.id}">＋</button><button class="iconbtn" data-template="edit" data-cat="${c.id}">✎</button><button class="iconbtn" data-template="delete" data-cat="${c.id}">×</button></div></div><div class="items">${c.items.length?`<div class="item item-head"><span>결제수단</span><span class="pay-date">결제일</span><span>내역</span><span style="text-align:right">금액</span><span></span><span></span><span></span></div>${c.items.map(i=>`<div class="item"><span class="method ${i.method==='체크'?'debit':i.method==='현금'?'cash':''}">${escapeHtml(i.method||'미선택')}</span><span class="pay-date">${i.payDate?escapeHtml(i.payDate)+'일':'—'}</span><span class="item-name">${escapeHtml(i.name)}</span><span class="amount">${i.amount?money(i.amount):'—'}</span><span></span><span></span><span></span></div>`).join('')}`:''}</div></div>`).join(''):'<div class="empty">아직 반복 카테고리가 없습니다. 아래 버튼으로 만들어 주세요.</div>';
+ $('#manageArea').innerHTML=state.templates.length?state.templates.map(c=>`<div class="cat"><div class="cat-head"><span style="color:#83b600">▰</span><span class="cat-name">${escapeHtml(c.name)}</span><span class="cat-count">${c.items.length}개 항목</span><div class="cat-actions"><button class="iconbtn" data-template="add" data-cat="${c.id}">＋</button><button class="iconbtn" data-template="edit" data-cat="${c.id}">✎</button><button class="iconbtn" data-template="delete" data-cat="${c.id}">×</button></div></div><div class="items">${c.items.length?`<div class="item item-head"><span>결제수단</span><span class="pay-date">결제일</span><span>내역</span><span style="text-align:right">금액</span><span></span><span></span><span></span></div>${c.items.map(i=>`<div class="item"><span class="method ${i.method==='체크'?'debit':i.method==='현금'?'cash':''}">${escapeHtml(i.method||'미선택')}</span><span class="pay-date">${i.payDate?escapeHtml(i.payDate)+'일':'—'}</span><span class="item-name">${escapeHtml(i.name)}</span><span class="amount">${i.amount?money(i.amount):'—'}</span><span></span><button class="iconbtn" title="항목 수정" data-template-item="edit" data-cat="${c.id}" data-item="${i.id}">✎</button><button class="iconbtn" title="항목 삭제" data-template-item="delete" data-cat="${c.id}" data-item="${i.id}">×</button></div>`).join('')}`:''}</div></div>`).join(''):'<div class="empty">아직 반복 카테고리가 없습니다. 아래 버튼으로 만들어 주세요.</div>';
 }
 function openModal(title,body,onSave){$('#modalTitle').textContent=title;$('#modalBody').innerHTML=body;modalSave=onSave;$('#modalBackdrop').classList.add('show')}
 function closeModal(){$('#modalBackdrop').classList.remove('show');modalSave=null}
@@ -182,6 +185,17 @@ function addItem(kind,catId,item=null){
   persist();closeModal();render();
  });
 }
+function editTemplateItem(catId,itemId=null){
+ const c=state.templates.find(x=>x.id===catId);if(!c)return;
+ const item=itemId?c.items.find(x=>x.id===itemId):null;if(itemId&&!item)return;
+ openModal(item?'반복항목 수정':'반복항목 추가',itemForm(item||{}),()=>{
+  const name=$('#fItemName').value.trim();if(!name){showToast('항목명을 입력해 주세요.');return}
+  const raw=$('#fPayDate').value.trim();const payDate=raw?Math.max(1,Math.min(31,Number(raw))):'';
+  const data={id:item?.id||uid(),method:$('#fMethod').value,payDate,name,amount:$('#fAmount').value?Number($('#fAmount').value):'',note:$('#fNote').value.trim(),done:false};
+  if(item)Object.assign(item,data);else c.items.push(data);
+  persist();closeModal();render();showToast(item?'반복항목 설정을 수정했습니다. 다음 달부터 적용됩니다.':'반복항목을 추가했습니다. 다음 달부터 적용됩니다.');
+ });
+}
 function editCat(kind,id){
  const c=findCat(kind,id);if(!c)return;
  openModal('카테고리 수정',catForm(c.name),()=>{const name=$('#fCatName').value.trim();if(!name)return;const old=c.name;c.name=name;if(kind==='recurring'){const t=state.templates.find(x=>x.id===id);if(t)t.name=name}persist();closeModal();render()});
@@ -207,11 +221,20 @@ document.addEventListener('click',e=>{
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-template]');if(!b)return;
  const c=state.templates.find(x=>x.id===b.dataset.cat);if(!c)return;
- if(b.dataset.template==='add')addItem('recurring',c.id);
+ if(b.dataset.template==='add')editTemplateItem(c.id);
  if(b.dataset.template==='edit')editCat('recurring',c.id);
  if(b.dataset.template==='delete'){if(confirm('반복 카테고리를 삭제할까요? 다음 달부터 생성되지 않습니다.')){state.templates=state.templates.filter(x=>x.id!==c.id);persist();render()}}
 });
-$('#addRecurringCat').onclick=()=>addCat('recurring');$('#addRecurringCat2').onclick=()=>addCat('recurring');$('#addMonthlyCat').onclick=()=>addCat('monthly');
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-template-item]');if(!b)return;
+ const catId=b.dataset.cat,itemId=b.dataset.item,c=state.templates.find(x=>x.id===catId);if(!c)return;
+ if(b.dataset.templateItem==='edit')editTemplateItem(catId,itemId);
+ if(b.dataset.templateItem==='delete'){
+  if(!confirm('이 반복항목을 삭제할까요? 이미 저장된 이번 달 및 과거 기록은 유지되고 다음 달부터 생성되지 않습니다.'))return;
+  c.items=c.items.filter(x=>x.id!==itemId);persist();render();showToast('반복항목을 삭제했습니다.');
+ }
+});
+$('#addRecurringCat2').onclick=()=>addCat('recurring');$('#addMonthlyCat').onclick=()=>addCat('monthly');
 $('#manageBtn').onclick=()=>setView('manage');
 $('#prevMonth').onclick=()=>{const d=monthDate(currentMonth);d.setMonth(d.getMonth()-1);currentMonth=monthKey(d);snapshotTemplates(currentMonth);render()};
 $('#nextMonth').onclick=()=>{const d=monthDate(currentMonth);d.setMonth(d.getMonth()+1);const k=monthKey(d);if(k>monthKey(now))return;currentMonth=k;snapshotTemplates(currentMonth);render()};
