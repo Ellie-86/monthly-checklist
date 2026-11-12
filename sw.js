@@ -1,4 +1,4 @@
-const CACHE_NAME = 'monthly-checklist-v4';
+const CACHE_NAME = 'monthly-checklist-v5';
 const APP_FILES = [
   './',
   './index.html',
